@@ -81,6 +81,11 @@
     animation: spin .8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .stage-icon { width: 20px; height: 20px; flex: none; }
+  #stage-ok { fill: var(--ok); }
+  #stage-err { fill: var(--err); }
+  #stage.ok #stage-text { color: var(--ok); }
+  #stage.err #stage-text { color: var(--err); }
   #counter { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
   .bar { height: 10px; border-radius: 6px; background: #e8eef7; overflow: hidden; }
   .bar > i {
@@ -156,7 +161,12 @@
 
   <div class="card hidden" id="progress-card">
     <div class="status-row">
-      <div id="stage"><span class="spinner"></span><span id="stage-text">准备中……</span></div>
+      <div id="stage">
+        <span class="spinner" id="stage-spin"></span>
+        <svg class="stage-icon hidden" id="stage-ok" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+        <svg class="stage-icon hidden" id="stage-err" viewBox="0 0 24 24"><path d="M11 7h2v6h-2V7zm0 8h2v2h-2v-2z"/></svg>
+        <span id="stage-text">准备中……</span>
+      </div>
       <div id="counter"></div>
     </div>
     <div class="bar"><i id="bar"></i></div>
@@ -194,6 +204,15 @@
 const $ = s => document.querySelector(s);
 let timer = null, logLen = 0;
 
+function setStage(mode) {
+  // mode: "run" 转圈进行中 / "ok" 成功对号 / "err" 失败感叹号
+  $("#stage-spin").classList.toggle("hidden", mode !== "run");
+  $("#stage-ok").classList.toggle("hidden", mode !== "ok");
+  $("#stage-err").classList.toggle("hidden", mode !== "err");
+  $("#stage").classList.toggle("ok", mode === "ok");
+  $("#stage").classList.toggle("err", mode === "err");
+}
+
 function fmtSize(n) {
   if (n >= 1048576) return (n / 1048576).toFixed(1) + " MB";
   return Math.max(1, Math.round(n / 1024)) + " KB";
@@ -225,7 +244,11 @@ async function start() {
     return;
   }
   $("#progress-card").classList.remove("hidden");
+  $("#progress-card .bar > i").style.width = "0%";
+  $("#counter").textContent = "";
   $("#log").textContent = "";
+  setStage("run");
+  $("#stage-text").textContent = "准备中……";
   poll();
 }
 
@@ -241,7 +264,8 @@ function poll() {
 }
 
 function render(s) {
-  $("#stage-text").textContent = s.stage || (s.running ? "处理中……" : "已结束");
+  if (s.running) setStage("run");
+  $("#stage-text").textContent = s.stage || (s.running ? "处理中……" : "");
   const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
   $("#bar").style.width = (s.running ? pct : 100) + "%";
   $("#counter").textContent = s.total > 0 ? (s.done + " / " + s.total + " 页") : "";
@@ -254,11 +278,13 @@ function render(s) {
 }
 
 function onFinished(s) {
-  $("#stage-text").textContent = "已结束";
   $("#start").disabled = false;
   $("#start").textContent = "开始提取";
   $("#bar").style.width = "100%";
   if (s.result) {
+    setStage("ok");
+    $("#stage-text").textContent = "提取完成";
+    $("#counter").textContent = "";
     const r = s.result;
     $("#r-title").textContent = "《" + r.title + "》";
     $("#r-pdf").textContent = r.pdf_name;
@@ -266,6 +292,9 @@ function onFinished(s) {
     $("#view-pdf").href = "/api/pdf";
     $("#done-card").classList.remove("hidden");
   } else if (s.error) {
+    setStage("err");
+    $("#stage-text").textContent = "提取失败";
+    $("#counter").textContent = "";
     $("#err-text").textContent = s.error;
     $("#err-card").classList.remove("hidden");
   }
