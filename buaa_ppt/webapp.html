@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智学北航 · 回放 PPT 提取</title>
+<style>
+  :root {
+    --bg: #eef3fa;
+    --card: #ffffff;
+    --primary: #1a5ce5;
+    --primary-2: #0a9bf5;
+    --text: #1c2436;
+    --muted: #78829c;
+    --border: #e2e8f3;
+    --ok: #16a34a;
+    --err: #dc2626;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(160deg, #f2f6fc 0%, #e6eef9 50%, #e0ebf6 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 44px 16px 64px;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+
+  header { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    width: 52px; height: 52px; border-radius: 14px; flex: none;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 20px rgba(26, 92, 229, .35);
+  }
+  .logo svg { width: 28px; height: 28px; fill: #fff; }
+  h1 { font-size: 24px; letter-spacing: .5px; }
+  .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 34px rgba(23, 43, 99, .07);
+    padding: 24px;
+    margin-top: 22px;
+  }
+  .card h2 { font-size: 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-2)); }
+
+  label.field { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  #url {
+    width: 100%; padding: 13px 15px; font-size: 15px;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+    color: var(--text); background: #f8faff;
+  }
+  #url:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(26, 92, 229, .12); background: #fff; }
+  .opts { display: flex; align-items: center; gap: 18px; margin-top: 12px; flex-wrap: wrap; }
+  .opts label { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .opts input { accent-color: var(--primary); width: 16px; height: 16px; }
+  #start {
+    margin-top: 18px; width: 100%; padding: 14px;
+    font-size: 16px; font-weight: 600; letter-spacing: 2px;
+    color: #fff; border: none; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+    box-shadow: 0 8px 20px rgba(26, 92, 229, .3);
+    transition: transform .15s, box-shadow .15s, filter .15s;
+  }
+  #start:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(26, 92, 229, .38); }
+  #start:disabled { filter: grayscale(.6); cursor: not-allowed; box-shadow: none; }
+  .msg { color: var(--err); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+  .hidden { display: none !important; }
+  .status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  #stage { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%; flex: none;
+    border: 2.5px solid rgba(26, 92, 229, .2); border-top-color: var(--primary);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #counter { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .bar { height: 10px; border-radius: 6px; background: #e8eef7; overflow: hidden; }
+  .bar > i {
+    display: block; height: 100%; width: 0%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--primary), var(--primary-2));
+    transition: width .4s ease;
+  }
+  #log {
+    margin-top: 16px; padding: 12px 14px; border-radius: 10px;
+    background: #101827; color: #b7c8e4; font-size: 12px; line-height: 1.7;
+    font-family: Consolas, "Courier New", monospace;
+    max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+  }
+  #log:empty { display: none; }
+
+  .result-head { display: flex; align-items: center; gap: 10px; color: var(--ok); font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+  .result-head svg { width: 22px; height: 22px; fill: var(--ok); }
+  #r-title { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+  .pdf-row {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    background: #f6f9ff; border: 1px solid var(--border); border-radius: 12px;
+  }
+  .pdf-icon {
+    width: 42px; height: 42px; border-radius: 10px; flex: none;
+    background: linear-gradient(135deg, #ff5f57, #ff9500);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 13px;
+  }
+  .pdf-meta { flex: 1; min-width: 0; }
+  #r-pdf { font-weight: 600; font-size: 15px; word-break: break-all; }
+  #r-size { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .btns { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 18px; font-size: 14px; border-radius: 10px; cursor: pointer;
+    border: 1.5px solid var(--border); background: #fff; color: var(--text);
+    transition: border-color .15s, background .15s;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--primary); color: var(--primary); background: #f4f8ff; }
+  .btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); border: none; color: #fff; }
+  .btn.primary:hover { filter: brightness(1.06); color: #fff; }
+  #thumbs { margin-top: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  #thumbs img {
+    width: 100%; aspect-ratio: 16/9; object-fit: cover; object-position: left top;
+    border-radius: 8px; border: 1px solid var(--border); background: #fff;
+  }
+  .err-box {
+    display: flex; gap: 10px; align-items: flex-start; color: var(--err);
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 16px;
+    font-size: 14px; line-height: 1.6; word-break: break-all;
+  }
+  footer { margin-top: 28px; text-align: center; color: #9aa4bd; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M12 3 1 8l11 5 9-4.09V15h2V8L12 3zM5 12.18V16c0 1.66 3.13 3 7 3s7-1.34 7-3v-3.82l-7 3.18-7-3.18z"/></svg>
+    </div>
+    <div>
+      <h1>智学北航 · 回放 PPT 提取</h1>
+      <div class="sub">粘贴回放页链接，一键提取全部幻灯片并合成 PDF</div>
+    </div>
+  </header>
+
+  <div class="card">
+    <label class="field" for="url">回放页地址</label>
+    <input id="url" type="text" spellcheck="false"
+           placeholder="https://classroom.msa.buaa.edu.cn/livingroom?course_id=...&sub_id=...&tenant_code=21">
+    <div class="opts">
+      <label><input id="dedupe" type="checkbox" checked> 合并重复页面</label>
+    </div>
+    <button id="start">开始提取</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="card hidden" id="progress-card">
+    <div class="status-row">
+      <div id="stage"><span class="spinner"></span><span id="stage-text">准备中……</span></div>
+      <div id="counter"></div>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <div id="log"></div>
+  </div>
+
+  <div class="card hidden" id="done-card">
+    <div class="result-head">
+      <svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+      提取完成
+    </div>
+    <div id="r-title"></div>
+    <div class="pdf-row">
+      <div class="pdf-icon">PDF</div>
+      <div class="pdf-meta">
+        <div id="r-pdf"></div>
+        <div id="r-size"></div>
+      </div>
+    </div>
+    <div class="btns">
+      <a class="btn primary" id="view-pdf" href="#" target="_blank">查看 PDF</a>
+      <button class="btn" id="open-folder">打开文件夹</button>
+    </div>
+    <div id="thumbs"></div>
+  </div>
+
+  <div class="card hidden" id="err-card">
+    <div class="err-box"><span>⚠</span><span id="err-text"></span></div>
+  </div>
+
+  <footer>仅在本地运行 · 使用你自己的登录账号访问已选课程内容 · 供个人学习使用</footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let timer = null, logLen = 0;
+
+function fmtSize(n) {
+  if (n >= 1048576) return (n / 1048576).toFixed(1) + " MB";
+  return Math.max(1, Math.round(n / 1024)) + " KB";
+}
+
+async function start() {
+  $("#msg").textContent = "";
+  const url = $("#url").value.trim();
+  if (!url) { $("#msg").textContent = "请先粘贴回放页链接"; $("#url").focus(); return; }
+  $("#start").disabled = true;
+  $("#start").textContent = "提取中……";
+  $("#done-card").classList.add("hidden");
+  $("#err-card").classList.add("hidden");
+  logLen = 0;
+  let resp;
+  try {
+    resp = await fetch("/api/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: url, keep_duplicates: $("#dedupe").checked }),
+    });
+  } catch (e) { resp = null; }
+  if (!resp || !resp.ok) {
+    let text = "启动失败";
+    try { text = (await resp.json()).error || text; } catch (e) {}
+    $("#msg").textContent = text;
+    $("#start").disabled = false;
+    $("#start").textContent = "开始提取";
+    return;
+  }
+  $("#progress-card").classList.remove("hidden");
+  $("#log").textContent = "";
+  poll();
+}
+
+function poll() {
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    let s;
+    try { s = await (await fetch("/api/status?t=" + Date.now())).json(); }
+    catch (e) { return; }
+    render(s);
+    if (!s.running) { clearInterval(timer); onFinished(s); }
+  }, 700);
+}
+
+function render(s) {
+  $("#stage-text").textContent = s.stage || (s.running ? "处理中……" : "已结束");
+  const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
+  $("#bar").style.width = (s.running ? pct : 100) + "%";
+  $("#counter").textContent = s.total > 0 ? (s.done + " / " + s.total + " 页") : "";
+  if (s.log && s.log.length > logLen) {
+    const box = $("#log");
+    box.append(s.log.slice(logLen).join("\n") + "\n");
+    box.scrollTop = box.scrollHeight;
+    logLen = s.log.length;
+  }
+}
+
+function onFinished(s) {
+  $("#stage-text").textContent = "已结束";
+  $("#start").disabled = false;
+  $("#start").textContent = "开始提取";
+  $("#bar").style.width = "100%";
+  if (s.result) {
+    const r = s.result;
+    $("#r-title").textContent = "《" + r.title + "》 · 共 " + r.count + " 页";
+    $("#r-pdf").textContent = r.pdf_name;
+    $("#r-size").textContent = fmtSize(r.pdf_size) + " · 输出目录 output/" + r.dir_name;
+    $("#view-pdf").href = "/api/pdf";
+    $("#thumbs").innerHTML = r.slides.slice(0, 8).map((f, i) =>
+      `<img src="/api/preview/${i}" loading="lazy" alt="第${i + 1}页">`).join("");
+    $("#done-card").classList.remove("hidden");
+  } else if (s.error) {
+    $("#err-text").textContent = s.error;
+    $("#err-card").classList.remove("hidden");
+  }
+}
+
+$("#start").addEventListener("click", start);
+$("#url").addEventListener("keydown", e => { if (e.key === "Enter") start(); });
+$("#open-folder").addEventListener("click", async () => {
+  const r = await fetch("/api/open-folder", { method: "POST" });
+  if (!r.ok) {
+    try { $("#msg").textContent = (await r.json()).error; } catch (e) {}
+  }
+});
+</script>
+</body>
+</html>

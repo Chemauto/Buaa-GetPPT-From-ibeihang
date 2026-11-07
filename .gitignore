@@ -1,0 +1,8 @@
+.venv/
+.browser_profile/
+output/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+.DS_Store
