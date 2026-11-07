@@ -85,7 +85,7 @@ class JobState:
                 "count": len(slides),
                 "pdf_name": pdf.name,
                 "pdf_size": pdf.stat().st_size,
-                "dir_name": out_dir.name,
+                "dir_name": out_dir.relative_to(OUTPUT_ROOT).as_posix(),
                 "slides": slides,
             }
         self.out_dir = out_dir
@@ -120,7 +120,7 @@ def run_job(url: str, keep_duplicates: bool):
             headless=False,
             log=lambda m: (print(m), state.log(m)),
         )
-        slides, title = extractor.extract(
+        slides, title, out_dir = extractor.extract(
             url=url,
             out_dir=out_dir,
             login_timeout_s=900,

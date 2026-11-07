@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
-from .extractor import Slide
+from .extractor import Slide, safe_name
 
 
 def build_pdf(out_dir: Path, slides: list[Slide], title: str) -> Path:
@@ -32,8 +31,3 @@ def _build_with_pillow(pdf_path: Path, images: list[str]):
             pages.append(im.convert("RGB").copy())
     if pages:
         pages[0].save(pdf_path, save_all=True, append_images=pages[1:], quality=90)
-
-
-def safe_name(title: str) -> str:
-    name = re.sub(r'[\\/:*?"<>|\r\n\t]', "_", (title or "").strip())
-    return name or "课件"

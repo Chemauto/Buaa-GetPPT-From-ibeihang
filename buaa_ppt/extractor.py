@@ -49,6 +49,42 @@ class _Entry:
     timestamp: str | None = None
 
 
+# 回放页标题形如“课程名第3周星期2第3,4节”，按此拆出课程名与周次节次
+TITLE_SPLIT_RE = re.compile(r"^(.+?)(第\s*\d+\s*周.*)$")
+
+
+def split_title(title: str) -> tuple[str | None, str | None]:
+    m = TITLE_SPLIT_RE.match((title or "").strip())
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    return None, None
+
+
+def safe_name(name: str) -> str:
+    cleaned = re.sub(r'[\\/:*?"<>|\r\n\t]', "_", (name or "").strip())
+    return cleaned or "未命名"
+
+
+def resolve_output_dir(working_dir: Path, title: str) -> Path:
+    """把时间戳工作目录整理为 output/<课程名>/<周次节次>，返回最终目录。
+
+    标题无法拆分时保留原目录；目标已存在（重复提取同一讲）时追加 _2、_3 序号。
+    """
+    course, session = split_title(title)
+    if not course:
+        return working_dir
+    target = working_dir.parent / safe_name(course) / safe_name(session)
+    candidate, n = target, 1
+    while candidate.exists():
+        n += 1
+        candidate = target.with_name(f"{target.name}_{n}")
+    if candidate == working_dir:
+        return working_dir
+    candidate.parent.mkdir(parents=True, exist_ok=True)
+    working_dir.rename(candidate)
+    return candidate
+
+
 def _format_seconds(sec: int) -> str:
     sec = max(0, int(sec))
     if sec >= 3600:
@@ -399,7 +435,11 @@ class SlideExtractor:
         login_timeout_s: int = 600,
         keep_duplicates: bool = False,
         on_progress: Callable[[int, int], None] | None = None,
-    ) -> tuple[list[Slide], str]:
+    ) -> tuple[list[Slide], str, Path]:
+        """提取全部幻灯片，返回 (页列表, 回放页标题, 最终输出目录)。
+
+        out_dir 是提取过程的工作目录；结束后会整理为 output/<课程名>/<周次节次>。
+        """
         out_dir.mkdir(parents=True, exist_ok=True)
         self.profile_dir.mkdir(parents=True, exist_ok=True)
 
@@ -443,8 +483,9 @@ class SlideExtractor:
                 slides = self._save_entries(
                     ctx, page, entries, out_dir, url, keep_duplicates, on_progress
                 )
-                title = (page.title() or "课堂回放PPT").strip()
-                return slides, title
+                title = (page.title() or "").strip()
+                final_dir = resolve_output_dir(out_dir, title)
+                return slides, title, final_dir
             finally:
                 ctx.close()
 

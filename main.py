@@ -38,7 +38,7 @@ def main() -> int:
         headless=args.headless,
     )
     try:
-        slides, title = extractor.extract(
+        slides, title, out_dir = extractor.extract(
             url=args.url,
             out_dir=out_dir,
             login_timeout_s=args.login_timeout,
@@ -54,7 +54,8 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         print(f"PDF 合成失败：{exc}（图片已保存在 {out_dir / 'slides'}）")
         return 1
-    print(f"完成！PDF 文件：{pdf}")
+    print(f"完成！输出目录：{out_dir}")
+    print(f"PDF 文件：{pdf}")
     return 0
 
 

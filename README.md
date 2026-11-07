@@ -55,13 +55,17 @@ python main.py "https://classroom.msa.buaa.edu.cn/livingroom?course_id=xxxx&sub_
 
 ## 输出内容
 
+输出目录按「课程名 / 周次节次」自动组织（取自回放页标题，如 `科学写作与报告` / `第3周星期2第3,4节`），重复提取同一讲时自动追加序号不会覆盖：
+
 ```
-output/web_20261107_113209/
-├── <课程名称>.pdf                        # 全部幻灯片按页序合成的 PDF，以回放页标题命名
-└── slides/
-    ├── slide_001.jpg                     # 逐页幻灯片原图
-    ├── slide_002.jpg
-    └── ...
+output/
+└── <课程名>/
+    └── <第N周星期X第X,X节>/
+        ├── <课程名><周次节次>.pdf        # 全部幻灯片按页序合成的 PDF
+        └── slides/
+            ├── slide_001.jpg             # 逐页幻灯片原图
+            ├── slide_002.jpg
+            └── ...
 ```
 
 ## 常见问题
