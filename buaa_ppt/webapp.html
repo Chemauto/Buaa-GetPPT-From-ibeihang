@@ -302,6 +302,13 @@ function onFinished(s) {
 
 $("#start").addEventListener("click", start);
 $("#url").addEventListener("keydown", e => { if (e.key === "Enter") start(); });
+
+// 通过 BuaaGetPPt.exe "链接" 启动时，自动填入命令行带来的回放页地址
+const presetUrl = new URLSearchParams(location.search).get("url");
+if (presetUrl) {
+  $("#url").value = presetUrl;
+}
+
 $("#open-folder").addEventListener("click", async () => {
   const r = await fetch("/api/open-folder", { method: "POST" });
   if (!r.ok) {

@@ -1,26 +1,37 @@
 """智学北航回放 PPT 提取工具——网页操作界面。
 
-运行 `python webui.py` 会自动打开浏览器页面（http://127.0.0.1:8765），
-在页面中粘贴回放链接即可开始提取，实时显示进度与日志，完成后可直接
-查看 PDF / 打开输出文件夹。需要登录时工具会弹出浏览器窗口，完成一次
-登录后长期有效。
+运行 `python webui.py`（或双击打包好的 BuaaGetPPt.exe）会自动打开浏览器页面
+（http://127.0.0.1:8765），在页面中粘贴回放链接即可开始提取，实时显示进度
+与日志，完成后可直接查看 PDF / 打开输出文件夹。
+
+命令行传入回放链接时（`python webui.py "链接"`），打开的页面会自动填好该链接。
+需要登录时工具会弹出浏览器窗口，完成一次登录后长期有效。
 """
 
 from __future__ import annotations
 
 import os
+import sys
 import threading
 import webbrowser
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
 from buaa_ppt.extractor import SlideExtractor
 from buaa_ppt.pdfgen import build_pdf
 
-PROJECT_DIR = Path(__file__).resolve().parent
-HTML_PATH = PROJECT_DIR / "buaa_ppt" / "webapp.html"
+if getattr(sys, "frozen", False):
+    # PyInstaller 打包后：__file__ 在临时解压目录，输出等应放在 exe 旁边
+    PROJECT_DIR = Path(sys.executable).resolve().parent
+    RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", PROJECT_DIR))
+else:
+    PROJECT_DIR = Path(__file__).resolve().parent
+    RESOURCE_DIR = PROJECT_DIR
+
+HTML_PATH = RESOURCE_DIR / "buaa_ppt" / "webapp.html"
 OUTPUT_ROOT = PROJECT_DIR / "output"
 HOST, PORT = "127.0.0.1", 8765
 
@@ -182,9 +193,13 @@ def api_open_folder():
 
 def main():
     OUTPUT_ROOT.mkdir(exist_ok=True)
-    url = f"http://{HOST}:{PORT}"
-    print(f"网页界面：{url}（Ctrl+C 退出）")
-    threading.Timer(1.2, lambda: webbrowser.open(url)).start()
+    open_url = f"http://{HOST}:{PORT}/"
+    # 命令行传入回放链接时，打开页面后自动填入输入框
+    target = sys.argv[1].strip() if len(sys.argv) > 1 else ""
+    if target.startswith(("http://", "https://")):
+        open_url += "?url=" + quote(target, safe="")
+    print(f"网页界面：{open_url}（Ctrl+C 退出）")
+    threading.Timer(1.2, lambda: webbrowser.open(open_url)).start()
     app.run(host=HOST, port=PORT, debug=False, threaded=True)
 
 
