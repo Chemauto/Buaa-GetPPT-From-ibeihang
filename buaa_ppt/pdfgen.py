@@ -1,7 +1,11 @@
-"""把提取到的幻灯片图片按页序合成为一个 PDF 文件。"""
+"""把提取到的幻灯片图片按页序合成为一个 PDF 文件。
+
+PDF 成功生成后即删除逐页图片，最终输出只保留 PDF。
+"""
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 from .extractor import Slide, safe_name
@@ -19,6 +23,7 @@ def build_pdf(out_dir: Path, slides: list[Slide], title: str) -> Path:
         pdf_path.write_bytes(img2pdf.convert(images))
     except Exception:  # noqa: BLE001 - 少数带透明通道的图片 img2pdf 不接受
         _build_with_pillow(pdf_path, images)
+    shutil.rmtree(out_dir / "slides", ignore_errors=True)
     return pdf_path
 
 

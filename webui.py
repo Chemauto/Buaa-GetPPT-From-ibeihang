@@ -75,18 +75,16 @@ class JobState:
             if total:
                 self._data["stage"] = "正在下载原图……"
 
-    def finish(self, out_dir: Path, pdf: Path, title: str, slides: list[str]):
+    def finish(self, out_dir: Path, pdf: Path, title: str):
         with self._lock:
             self._busy = False
             self._data["running"] = False
             self._data["stage"] = "完成"
             self._data["result"] = {
                 "title": title,
-                "count": len(slides),
                 "pdf_name": pdf.name,
                 "pdf_size": pdf.stat().st_size,
                 "dir_name": out_dir.relative_to(OUTPUT_ROOT).as_posix(),
-                "slides": slides,
             }
         self.out_dir = out_dir
 
@@ -131,12 +129,7 @@ def run_job(url: str, keep_duplicates: bool):
             raise RuntimeError("未提取到任何幻灯片，请检查链接与登录状态。")
         state.stage(f"正在合成 PDF（共 {len(slides)} 页）……")
         pdf = build_pdf(out_dir, slides, title)
-        state.finish(
-            out_dir=out_dir,
-            pdf=pdf,
-            title=title,
-            slides=[s.file for s in slides],
-        )
+        state.finish(out_dir=out_dir, pdf=pdf, title=title)
         print(f"任务完成：{pdf}")
     except Exception as exc:  # noqa: BLE001 - 后台线程内统一收集错误
         state.fail(str(exc))
@@ -167,14 +160,6 @@ def api_extract():
 @app.get("/api/status")
 def api_status():
     return jsonify(state.snapshot())
-
-
-@app.get("/api/preview/<int:idx>")
-def api_preview(idx: int):
-    result = state.result()
-    if not result or not (0 <= idx < len(result["slides"])):
-        return jsonify({"error": "预览不存在"}), 404
-    return send_from_directory(state.out_dir, result["slides"][idx])
 
 
 @app.get("/api/pdf")

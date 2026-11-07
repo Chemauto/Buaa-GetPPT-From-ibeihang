@@ -122,11 +122,7 @@
   .btn:hover { border-color: var(--primary); color: var(--primary); background: #f4f8ff; }
   .btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); border: none; color: #fff; }
   .btn.primary:hover { filter: brightness(1.06); color: #fff; }
-  #thumbs { margin-top: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  #thumbs img {
-    width: 100%; aspect-ratio: 16/9; object-fit: cover; object-position: left top;
-    border-radius: 8px; border: 1px solid var(--border); background: #fff;
-  }
+  #thumbs { margin-top: 14px; color: var(--muted); font-size: 12.5px; }
   .err-box {
     display: flex; gap: 10px; align-items: flex-start; color: var(--err);
     background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 16px;
@@ -184,7 +180,7 @@
       <a class="btn primary" id="view-pdf" href="#" target="_blank">查看 PDF</a>
       <button class="btn" id="open-folder">打开文件夹</button>
     </div>
-    <div id="thumbs"></div>
+    <div id="thumbs">仅保留 PDF 文件，逐页图片已在合成后自动清理</div>
   </div>
 
   <div class="card hidden" id="err-card">
@@ -264,12 +260,10 @@ function onFinished(s) {
   $("#bar").style.width = "100%";
   if (s.result) {
     const r = s.result;
-    $("#r-title").textContent = "《" + r.title + "》 · 共 " + r.count + " 页";
+    $("#r-title").textContent = "《" + r.title + "》";
     $("#r-pdf").textContent = r.pdf_name;
     $("#r-size").textContent = fmtSize(r.pdf_size) + " · 输出目录 output/" + r.dir_name;
     $("#view-pdf").href = "/api/pdf";
-    $("#thumbs").innerHTML = r.slides.slice(0, 8).map((f, i) =>
-      `<img src="/api/preview/${i}" loading="lazy" alt="第${i + 1}页">`).join("");
     $("#done-card").classList.remove("hidden");
   } else if (s.error) {
     $("#err-text").textContent = s.error;
