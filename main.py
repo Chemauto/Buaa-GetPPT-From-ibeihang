@@ -26,6 +26,7 @@ def main() -> int:
     parser.add_argument("url", help="回放页面地址（livingroom 链接）")
     parser.add_argument("--out", default=None, help="输出目录（默认 output/<时间戳>）")
     parser.add_argument("--keep-duplicates", action="store_true", help="不去除重复的幻灯片")
+    parser.add_argument("--no-hd", action="store_true", help="关闭高清增强（默认开启：裁掉黑边并放大锐化）")
     parser.add_argument("--headless", action="store_true", help="无头模式运行浏览器（首次登录时不要使用）")
     parser.add_argument("--login-timeout", type=int, default=600, help="等待登录的最长时间（秒）")
     args = parser.parse_args()
@@ -50,7 +51,7 @@ def main() -> int:
         return 1
     print(f"\n共提取 {len(slides)} 页幻灯片，正在合成 PDF……")
     try:
-        pdf = build_pdf(out_dir, slides, title)
+        pdf = build_pdf(out_dir, slides, title, hd=not args.no_hd)
     except Exception as exc:  # noqa: BLE001
         print(f"PDF 合成失败：{exc}（图片已保存在 {out_dir / 'slides'}）")
         return 1

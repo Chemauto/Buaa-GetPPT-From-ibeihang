@@ -153,6 +153,7 @@
     <input id="url" type="text" spellcheck="false"
            placeholder="https://classroom.msa.buaa.edu.cn/livingroom?course_id=...&sub_id=...&tenant_code=21">
     <div class="opts">
+      <label><input id="hd" type="checkbox" checked> 高清增强（裁掉黑边并锐化放大，文件更大）</label>
       <label><input id="dedupe" type="checkbox" checked> 合并重复页面</label>
     </div>
     <button id="start">开始提取</button>
@@ -232,7 +233,7 @@ async function start() {
     resp = await fetch("/api/extract", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: url, keep_duplicates: $("#dedupe").checked }),
+      body: JSON.stringify({ url: url, keep_duplicates: $("#dedupe").checked, hd: $("#hd").checked }),
     });
   } catch (e) { resp = null; }
   if (!resp || !resp.ok) {

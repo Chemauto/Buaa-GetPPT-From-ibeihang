@@ -120,7 +120,7 @@ class JobState:
 state = JobState()
 
 
-def run_job(url: str, keep_duplicates: bool):
+def run_job(url: str, keep_duplicates: bool, hd: bool):
     try:
         out_dir = OUTPUT_ROOT / datetime.now().strftime("web_%Y%m%d_%H%M%S")
         state.stage("正在打开浏览器并加载回放页……")
@@ -139,7 +139,7 @@ def run_job(url: str, keep_duplicates: bool):
         if not slides:
             raise RuntimeError("未提取到任何幻灯片，请检查链接与登录状态。")
         state.stage(f"正在合成 PDF（共 {len(slides)} 页）……")
-        pdf = build_pdf(out_dir, slides, title)
+        pdf = build_pdf(out_dir, slides, title, hd=hd)
         state.finish(out_dir=out_dir, pdf=pdf, title=title)
         print(f"任务完成：{pdf}")
     except Exception as exc:  # noqa: BLE001 - 后台线程内统一收集错误
@@ -162,7 +162,7 @@ def api_extract():
         return jsonify({"error": "已有提取任务正在进行，请等待完成"}), 409
     threading.Thread(
         target=run_job,
-        args=(url, bool(data.get("keep_duplicates", False))),
+        args=(url, bool(data.get("keep_duplicates", False)), bool(data.get("hd", True))),
         daemon=True,
     ).start()
     return jsonify({"ok": True})
