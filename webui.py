@@ -33,7 +33,23 @@ else:
 
 HTML_PATH = RESOURCE_DIR / "buaa_ppt" / "webapp.html"
 OUTPUT_ROOT = PROJECT_DIR / "output"
-HOST, PORT = "127.0.0.1", 8765
+HOST = "127.0.0.1"
+PORT = int(os.environ.get("BUAA_PPT_PORT", "8765"))
+
+
+def _pick_port() -> int:
+    """默认端口被占用时（如被其他本地程序占用）依次向后找空闲端口。"""
+    import socket
+
+    port = PORT
+    for _ in range(10):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((HOST, port))
+                return port
+            except OSError:
+                port += 1
+    return PORT
 
 app = Flask(__name__)
 
@@ -193,14 +209,15 @@ def api_open_folder():
 
 def main():
     OUTPUT_ROOT.mkdir(exist_ok=True)
-    open_url = f"http://{HOST}:{PORT}/"
+    port = _pick_port()
+    open_url = f"http://{HOST}:{port}/"
     # 命令行传入回放链接时，打开页面后自动填入输入框
     target = sys.argv[1].strip() if len(sys.argv) > 1 else ""
     if target.startswith(("http://", "https://")):
         open_url += "?url=" + quote(target, safe="")
     print(f"网页界面：{open_url}（Ctrl+C 退出）")
     threading.Timer(1.2, lambda: webbrowser.open(open_url)).start()
-    app.run(host=HOST, port=PORT, debug=False, threaded=True)
+    app.run(host=HOST, port=port, debug=False, threaded=True)
 
 
 if __name__ == "__main__":
