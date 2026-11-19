@@ -92,6 +92,38 @@ def _format_seconds(sec: int) -> str:
     return f"{sec // 60:02d}:{sec % 60:02d}"
 
 
+# 转写面板提取：定位“时间行/文本行”交替的容器，按行解析为条目
+VOICE_EXTRACT_JS = """
+() => {
+  const TIME = new RegExp('^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$');
+  const countTimes = el => (el.innerText.match(new RegExp('^[ \\t]*[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?[ \\t]*$', 'gm')) || []).length;
+  const NL = String.fromCharCode(10);
+
+  let cont = null;
+  for (const el of document.querySelectorAll('[class*="trans"], [class*="voice"]')) {
+    if (countTimes(el) >= 20 && (!cont || countTimes(el) > countTimes(cont))) cont = el;
+  }
+  if (!cont) {
+    const anchor = Array.from(document.querySelectorAll('*')).find(e =>
+      e.children.length === 0 && new RegExp('[0-9]{1,2}:[0-9]{2}').test(e.textContent) && e.textContent.trim().length > 20);
+    let node = anchor;
+    for (let i = 0; i < 8 && node && !cont; i++) {
+      if (countTimes(node) >= 20) cont = node;
+      node = node.parentElement;
+    }
+  }
+  if (!cont) return [];
+  const lines = cont.innerText.split(NL).map(s => s.trim()).filter(Boolean);
+  const items = [];
+  for (const line of lines) {
+    if (TIME.test(line)) items.push({time: line, text: ''});
+    else if (items.length) items[items.length - 1].text += (items[items.length - 1].text ? ' ' : '') + line;
+  }
+  return items.filter(it => it.text);
+}
+"""
+
+
 class SlideExtractor:
     def __init__(
         self,
@@ -426,6 +458,28 @@ class SlideExtractor:
                 self.log(f"已保存 {no} 页……")
         return slides
 
+    # ---- 语音转写 -------------------------------------------------------
+
+    @staticmethod
+    def extract_transcript(page) -> list[dict]:
+        """切换到 语音识别 标签，从面板提取 {time, text} 转写条目。"""
+        page.locator("text=语音识别").first.click(timeout=5000)
+        time.sleep(4)
+        items = page.evaluate(VOICE_EXTRACT_JS)
+        return items or []
+
+    @staticmethod
+    def _write_transcript(path: Path, items: list[dict]):
+        lines = [
+            "# 语音识别转写原文",
+            "",
+            "> 提取自智学北航回放页语音识别面板，未经整理，可能存在识别错误",
+            "",
+        ]
+        for it in items:
+            lines.append(f"- [{it['time']}] {it['text']}")
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
     # ---- 主流程 ---------------------------------------------------------
 
     def extract(
@@ -483,6 +537,17 @@ class SlideExtractor:
                 slides = self._save_entries(
                     ctx, page, entries, out_dir, url, keep_duplicates, on_progress
                 )
+                # 语音识别转写（可选内容，失败不影响幻灯片）
+                transcript: list[dict] = []
+                try:
+                    transcript = self.extract_transcript(page)
+                    if transcript:
+                        self.log(f"提取到 {len(transcript)} 条语音转写。")
+                        self._write_transcript(out_dir / "transcript.md", transcript)
+                    else:
+                        self.log("该回放没有语音识别数据，跳过转写。")
+                except Exception as exc:  # noqa: BLE001 - 转写失败不影响主流程
+                    self.log(f"语音转写提取失败（不影响幻灯片）：{exc}")
                 title = (page.title() or "").strip()
                 final_dir = resolve_output_dir(out_dir, title)
                 return slides, title, final_dir
