@@ -2,14 +2,20 @@
 
 > 🎓 智学北航课堂回放 PPT 一键提取 —— 自动下载全部幻灯片，合成一个 PDF，按课程自动归档
 
-## 📥 免安装版（exe）
+## 📥 安装版（推荐）
 
-到 GitHub [**Releases**](https://github.com/Chemauto/Buaa-GetPPT-From-ibeihang/releases) 下载 `BuaaGetPPt.exe`，双击即可使用，**无需安装 Python**：
+到 GitHub [**Releases**](https://github.com/Chemauto/Buaa-GetPPT-From-ibeihang/releases) 下载 `BuaaGetPPt-Setup-x.x.x.exe`，双击进入安装向导：
 
-- 🖱️ 双击后自动打开操作页面；也支持 `BuaaGetPPt.exe "回放页链接"` 启动并自动填入链接
-- 📂 PDF 输出在 exe 所在目录旁的 `output/` 里，登录状态保存在同目录 `.browser_profile/`
-- 💻 系统需已安装 Chrome 或 Edge（工具直接调用，无需额外下载浏览器）
-- ⚠️ exe 未做代码签名，首次运行可能触发 Windows SmartScreen 提示，点「更多信息 → 仍要运行」即可
+- 🧙 可自选安装位置（默认装到个人程序目录，**无需管理员权限**）
+- 📌 自动创建开始菜单快捷方式，可选创建桌面图标；可在系统里直接卸载
+- 🚀 安装完成后从开始菜单（或桌面图标）启动，自动打开操作页面
+- 💻 需已安装 Chrome 或 Edge；两者都没有时软件会**自动下载 Chromium 内核**（约 150MB，仅首次）
+
+### 🎒 便携版
+
+不想安装的话，下载 `BuaaGetPPt-portable-x.x.x.exe` 单文件直接双击使用；PDF 输出与登录状态保存在 exe 旁边。
+
+> ⚠️ 两种版本都未做代码签名，首次运行如遇 Windows SmartScreen 提示，点「更多信息 → 仍要运行」即可。
 
 ## ✨ 功能特性
 
@@ -101,12 +107,16 @@ output/
 
 **某次提取报错或页数为 0？** 检查回放链接是否完整（地址栏整段复制），确认该课程回放对你可见；命令行模式下失败时输出目录里会留有 `debug_no_thumbs.png` 调试截图，便于排查。
 
-## 🔨 自行打包 exe（可选）
+## 🔨 自行打包（可选）
 
 ```bash
+# 1) 构建程序本体（dist/BuaaGetPPt.exe）
 pip install pyinstaller
 pyinstaller --onefile --name BuaaGetPPt --collect-all playwright \
   --add-data "buaa_ppt/webapp.html;buaa_ppt" webui.py
+
+# 2) 编译安装包（需安装 Inno Setup，https://jrsoftware.org/isdl.php）
+ISCC.exe installer/BuaaGetPPt.iss
 ```
 
-产物在 `dist/BuaaGetPPt.exe`（约 80 MB：单文件、首次启动需解压，属正常现象）。
+产物在 `dist/`：`BuaaGetPPt-Setup-x.x.x.exe`（安装包）与 `BuaaGetPPt.exe`（便携版单文件，首次启动需解压几秒）。

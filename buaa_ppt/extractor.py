@@ -159,10 +159,35 @@ class SlideExtractor:
             )
         except Exception as exc:  # noqa: BLE001
             errors.append(f"chromium: {exc}")
+        try:
+            self._install_chromium()
+            return p.chromium.launch_persistent_context(
+                str(self.profile_dir),
+                headless=self.headless,
+                viewport={"width": 1600, "height": 1000},
+            )
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"chromium(下载后): {exc}")
         raise RuntimeError(
-            "无法启动浏览器。请先安装运行 `python -m playwright install chromium`，"
-            "或确认本机已安装 Chrome / Edge。\n" + "\n".join(errors)
+            "无法启动浏览器。请确认本机已安装 Chrome / Edge；"
+            "都没有时会自动下载 Chromium 内核（约 150MB）。\n" + "\n".join(errors)
         )
+
+    def _install_chromium(self):
+        """本机没有任何浏览器时，调用 Playwright 驱动自动下载 Chromium 内核。"""
+        import os
+        import subprocess
+
+        import playwright
+
+        driver = Path(playwright.__file__).parent / "driver"
+        system = "node.exe" if os.name == "nt" else "node"
+        node = driver / system
+        cli = driver / "package" / "cli.js"
+        if not node.exists() or not cli.exists():
+            raise RuntimeError("找不到 Playwright 驱动，无法自动下载浏览器内核。")
+        self.log("本机未检测到 Chrome / Edge，正在自动下载 Chromium 内核（约 150MB，视网速需几分钟）……")
+        subprocess.run([str(node), str(cli), "install", "chromium"], check=True)
 
     def _open_with_login(self, page, url: str, timeout_s: int):
         page.goto(url, wait_until="domcontentloaded")
